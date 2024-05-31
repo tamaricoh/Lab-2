@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 #include "LineParser.h"
 
 void execute(cmdLine *pCmdLine, int debugMode) {
@@ -27,6 +28,41 @@ void execute(cmdLine *pCmdLine, int debugMode) {
             fprintf(stderr, "PID: %d\n", getpid());
             fprintf(stderr, "Executing command: %s\n", pCmdLine->arguments[0]);
         }
+        
+        // 3--------------------------------------
+        // Handle input redirection
+        if (pCmdLine->inputRedirect) {
+            int inputFd = open(pCmdLine->inputRedirect, O_RDONLY);
+            if (inputFd == -1) {
+                perror("open inputRedirect failed");
+                _exit(EXIT_FAILURE);  // Exit abnormally if open fails
+            }
+            if (dup2(inputFd, STDIN_FILENO) == -1) {
+                perror("dup2 inputRedirect failed");
+                _exit(EXIT_FAILURE);  // Exit abnormally if dup2 fails
+            }
+            close(inputFd);  // Close the file descriptor after duplicating
+        }
+
+        // Handle output redirection
+        if (pCmdLine->outputRedirect) {
+            int outputFd = open(pCmdLine->outputRedirect, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (outputFd == -1) {
+                perror("open outputRedirect failed");
+                _exit(EXIT_FAILURE);  // Exit abnormally if open fails
+            }
+            if (dup2(outputFd, STDOUT_FILENO) == -1) {
+                perror("dup2 outputRedirect failed");
+                _exit(EXIT_FAILURE);  // Exit abnormally if dup2 fails
+            }
+            close(outputFd);  // Close the file descriptor after duplicating
+        }
+
+        /* Input Redirection: If pCmdLine->inputRedirect is not NULL, open the file in read-only mode (O_RDONLY).
+            Use dup2 to duplicate the file descriptor to STDIN_FILENO and then close the file descriptor.
+        Output Redirection: If pCmdLine->outputRedirect is not NULL, open the file in write-only mode,
+            creating it if it does not exist and truncating it if it does (O_WRONLY | O_CREAT | O_TRUNC). 
+            Use dup2 to duplicate the file descriptor to STDOUT_FILENO and then close the file descriptor. */
 
         // Execute the command using execvp
         if (execvp(pCmdLine->arguments[0], pCmdLine->arguments) == -1) {
