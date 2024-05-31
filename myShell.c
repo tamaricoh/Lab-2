@@ -90,6 +90,16 @@ int main(int argc, char **argv) {
             continue;
         }
 
+        // 1c -------------------------
+        // Check for the "cd" command
+        if (strcmp(parsedCmdLine->arguments[0], "cd") == 0) {
+            // Change directory
+            if (chdir(parsedCmdLine->arguments[1]) != 0) {
+                fprintf(stderr, "cd failed: No such file or directory\n");
+            }
+            continue;
+        }
+
         // Execute the command
         execute(parsedCmdLine, debugMode);
 
