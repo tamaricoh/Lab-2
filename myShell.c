@@ -50,6 +50,25 @@ void execute(cmdLine *pCmdLine, int debugMode) {
     }
 }
 
+// 2-------------------------------------------------
+// Function to handle the alarm command
+void alarm_command(int pid) {
+    if (kill(pid, SIGCONT) == -1) {
+        perror("kill failed");
+    } else {
+        printf("Process with PID %d woken up successfully.\n", pid);
+    }
+}
+
+// Function to handle the blast command
+void blast_command(int pid) {
+    if (kill(pid, SIGKILL) == -1) {
+        perror("kill failed");
+    } else {
+        printf("Process with PID %d terminated successfully.\n", pid);
+    }
+}
+
 int main(int argc, char **argv) {
     char cwd[PATH_MAX];
     char input[2048];
@@ -101,7 +120,19 @@ int main(int argc, char **argv) {
         }
 
         // Execute the command
-        execute(parsedCmdLine, debugMode);
+        // execute(parsedCmdLine, debugMode);
+
+        // 2------------------------------------------------- if its an alarm or blast - handle it. else, execute commend.
+        if (strcmp(parsedCmdLine->arguments[0], "alarm") == 0 && parsedCmdLine->argCount == 2) {
+            int pid = atoi(parsedCmdLine->arguments[1]);
+            alarm_command(pid);
+        } else if (strcmp(parsedCmdLine->arguments[0], "blast") == 0 && parsedCmdLine->argCount == 2) {
+            int pid = atoi(parsedCmdLine->arguments[1]);
+            blast_command(pid);
+        } else {
+            // Execute the command
+            execute(parsedCmdLine, debugMode);
+        }
 
         // Release the cmdLine resources
         freeCmdLines(parsedCmdLine);
